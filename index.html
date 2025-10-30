@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Room — Commodore64 style</title>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    :root{--c64-blue:#7be0ff}
+    html,body{height:100%;margin:0}
+    body{background:#000;color:var(--c64-blue);font-family:VT323, monospace;overflow:hidden}
+
+    /* CRT Scan lines */
+    .crt-lines::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px);pointer-events:none;z-index:2;animation:scan 2s linear infinite}
+    @keyframes scan{0%{background-position-y:0}100%{background-position-y:3px}}
+
+    /* Grid */
+    .retro-grid{position:fixed;inset:-150%;z-index:0;opacity:.85;animation:diagonalTraverse 12s ease-in-out infinite alternate}
+    .grid-surface,.shadow-grid{position:absolute;inset:0;--cell:60px;background-size:var(--cell) var(--cell), var(--cell) var(--cell);pointer-events:none;animation:smoothParallelogram 6s linear infinite;transition:background-color .05s ease}
+    .shadow-grid{background-image:linear-gradient(rgba(255,255,255,0.1) 4px, transparent 4px), linear-gradient(90deg, rgba(255,255,255,0.1) 4px, transparent 4px)}
+    .shadow-grid:nth-child(1){transform:translate(10px,10px);opacity:.7}
+    .shadow-grid:nth-child(2){transform:translate(20px,20px);opacity:.5}
+    .shadow-grid:nth-child(3){transform:translate(40px,40px);opacity:.3}
+    .shadow-grid:nth-child(4){transform:translate(60px,60px);opacity:.15}
+    .shadow-grid:nth-child(5){transform:translate(80px,80px);opacity:.1}
+    .grid-surface{background-image:linear-gradient(white 4px, transparent 4px), linear-gradient(90deg, white 4px, transparent 4px);filter:drop-shadow(0 0 1px white) drop-shadow(0 0 2px white)}
+    @keyframes diagonalTraverse{0%{transform:translate(-25%,-25%)}100%{transform:translate(25%,25%)}}
+    @keyframes smoothParallelogram{0%{transform:skewX(0) skewY(0)}12.5%{transform:skewX(10deg) skewY(5deg)}25%{transform:skewX(18deg) skewY(9deg)}37.5%{transform:skewX(10deg) skewY(5deg)}50%{transform:skewX(0) skewY(0)}62.5%{transform:skewX(-10deg) skewY(-5deg)}75%{transform:skewX(-18deg) skewY(-9deg)}87.5%{transform:skewX(-10deg) skewY(-5deg)}100%{transform:skewX(0) skewY(0)}}
+
+    /* UI card */
+    .c64-card{background:rgba(0,0,0,0.75);border:2px solid rgba(123,224,255,0.18);box-shadow:0 8px 40px rgba(0,0,0,0.6), 0 0 20px rgba(123,224,255,0.1) inset;backdrop-filter:blur(4px);border-radius:0;transition:background-color .1s ease;will-change:transform;position:relative;padding:40px;max-width:900px;margin:40px auto;z-index:10}
+    .c64-card::before,.c64-card::after{content:'';position:absolute;inset:0;pointer-events:none}
+    .c64-card::before{border:4px solid #fff;border-right-color:#777;border-bottom-color:#777;border-top-width:6px}
+    .c64-card::after{border:1px solid #000;border-left-color:#ccc;border-top-color:#ccc;transform:translate(2px,2px)}
+
+    /* Flicker + shake on access denied */
+    .c64-card.ui-flicker{background-color:rgba(255,0,0,0.85);animation:uiShake .9s cubic-bezier(.25,.75,.25,1)}
+    @keyframes uiShake{0%{transform:translate(0,0) rotate(0)}10%{transform:translate(-6px,-3px) rotate(-.6deg)}20%{transform:translate(6px,2px) rotate(.6deg)}30%{transform:translate(-5px,3px) rotate(-.8deg)}40%{transform:translate(5px,-2px) rotate(.5deg)}50%{transform:translate(-3px,2px) rotate(-.4deg)}60%{transform:translate(3px,-1px) rotate(.4deg)}70%{transform:translate(-2px,1px) rotate(-.2deg)}80%{transform:translate(2px,-1px) rotate(.2deg)}90%{transform:translate(-1px,0) rotate(-.1deg)}100%{transform:translate(0,0) rotate(0)}}
+
+    .vcr-title{font-family:'VT323','Press Start 2P',monospace;font-size:4.5rem;letter-spacing:2px;text-shadow:0 0 12px rgba(123,224,255,.6),0 0 24px rgba(123,224,255,.3),0 6px 20px rgba(0,0,0,.6);margin:0}
+    .entrance-label{font-family:VT323,monospace;font-size:1.4rem;color:#fff;margin:18px 0}
+
+    .c64-input{background:rgba(0,0,0,0.6);border:1px solid rgba(123,224,255,.3);padding:.6rem .9rem;outline:none;color:#a7f3ff;font-family:VT323,monospace;letter-spacing:1px;border-radius:0;width:100%;font-size:1.2rem}
+    .glow-btn{font-family:VT323,monospace;border:1px solid rgba(123,224,255,.4);padding:.6rem 1rem;transition:transform .12s ease,box-shadow .12s ease;box-shadow:0 6px 30px rgba(0,0,0,.6);border-radius:0;cursor:pointer;background:transparent;color:var(--c64-blue)}
+    .glow-btn:hover{transform:translateY(-3px);box-shadow:0 14px 40px rgba(0,0,0,.6),0 0 18px rgba(123,224,255,.4)}
+    .controls{display:flex;gap:12px;justify-content:center;margin-top:12px}
+    .message{margin-top:12px;color:var(--c64-blue);font-size:0.95rem}
+
+    @media (max-width:640px){.vcr-title{font-size:2.2rem}}
+
+    /* helper layout */
+    .center-wrap{height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  </style>
+</head>
+<body>
+  <div class="retro-grid crt-lines" aria-hidden="true">
+    <div class="shadow-grid"></div>
+    <div class="shadow-grid"></div>
+    <div class="shadow-grid"></div>
+    <div class="shadow-grid"></div>
+    <div class="shadow-grid"></div>
+    <div class="grid-surface"></div>
+  </div>
+
+  <div class="center-wrap">
+    <div id="card" class="c64-card" role="region" aria-label="Commodore 64 access card">
+      <h1 id="title" class="vcr-title">My Room</h1>
+      <h2 class="entrance-label">Entrance:</h2>
+
+      <form id="form" style="max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:12px;align-items:stretch">
+        <input id="passInput" type="password" class="c64-input" placeholder="" aria-label="Passcode input">
+
+        <div class="controls">
+          <button id="enterBtn" type="submit" class="glow-btn">ENTER</button>
+          <button id="clearBtn" type="button" class="glow-btn">CLEAR</button>
+        </div>
+
+        <div style="display:flex;justify-content:center">
+          <a id="callLink" class="glow-btn" href="#" target="_blank" rel="noopener noreferrer">Call For Room Passcode</a>
+        </div>
+
+        <div id="msg" class="message" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Configurable defaults (matching the React component props)
+    const passcode = 'NIKO';
+    const targetUrl = 'https://stacyanom.github.io/thasman';
+    const youtubeUrl = 'https://www.instagram.com/medokinthasman';
+
+    // Elements
+    const input = document.getElementById('passInput');
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    const card = document.getElementById('card');
+    const titleEl = document.getElementById('title');
+    const callLink = document.getElementById('callLink');
+
+    callLink.href = youtubeUrl;
+
+    let uiFlicker = false;
+    let flickerColor = 'white';
+    let titleGlitch = {x:0,y:0,color:'#9ff6ff'};
+
+    const glitchColors = ['#ff4c4c','#4cfffc','#ffff4c','#ff4cff','#4cff4c','#ff9f4c'];
+
+    // Update CSS for grid-surface color dynamically
+    const gridSurface = document.querySelector('.grid-surface');
+    function applyFlickerColor(color){
+      gridSurface.style.backgroundImage = `linear-gradient(${color} 4px, transparent 4px), linear-gradient(90deg, ${color} 4px, transparent 4px)`;
+      gridSurface.style.filter = `drop-shadow(0 0 1px ${color}) drop-shadow(0 0 2px ${color})`;
+    }
+    applyFlickerColor(flickerColor);
+
+    // Interval to create flicker and title glitch (similar to React useEffect)
+    const interval = setInterval(()=>{
+      const chance = Math.random();
+      if(chance > 0.7){
+        const color = Math.random() > 0.5 ? 'rgba(255,0,0,0.9)' : 'rgba(0,0,255,0.9)';
+        flickerColor = color;
+        applyFlickerColor(flickerColor);
+        setTimeout(()=>{ flickerColor = 'white'; applyFlickerColor(flickerColor); }, 100);
+      }
+
+      if(Math.random() > 0.85){
+        const randomColor = glitchColors[Math.floor(Math.random()*glitchColors.length)];
+        titleGlitch = {x: Math.floor(Math.random()*8-4), y: Math.floor(Math.random()*8-4), color: randomColor};
+        titleEl.style.transform = `translate(${titleGlitch.x}px, ${titleGlitch.y}px)`;
+        titleEl.style.color = titleGlitch.color;
+        setTimeout(()=>{ titleGlitch = {x:0,y:0,color:'#9ff6ff'}; titleEl.style.transform='translate(0,0)'; titleEl.style.color='#9ff6ff'; }, 150);
+      }
+    },300);
+
+    // Form handling
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+      const val = input.value;
+      if(val === passcode){
+        msg.textContent = 'Access granted — redirecting...';
+        card.classList.remove('ui-flicker');
+        // Redirect after a short moment to give user feedback
+        setTimeout(()=>{ window.location.href = targetUrl; }, 600);
+      } else {
+        msg.textContent = 'Access denied — wrong passcode.';
+        card.classList.add('ui-flicker');
+        setTimeout(()=>{ card.classList.remove('ui-flicker'); }, 900);
+      }
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', function(){ input.value=''; msg.textContent=''; input.focus(); });
+
+    // Accessibility: focus input on load
+    window.addEventListener('load', ()=>{ input.focus(); });
+
+    // Clean up if page is unloaded
+    window.addEventListener('beforeunload', ()=>{ clearInterval(interval); });
+  </script>
+</body>
+</html>
